@@ -1098,12 +1098,14 @@ window.addEventListener("mikan-auth", async (e) => {
 
   authLoggedOut.hidden = true;
   authLoggedIn.hidden = false;
-  authUserLabel.textContent = "@" + profile.username;
-  setAuthMsg("");
 
-  username = profile.username;
+  const emailUname = (profile.email || "").split("@")[0] || "";
+  const hadUsername = Boolean(profile.username);
+  username = profile.username || emailUname || "cat";
   userNameInput.value = username;
+  authUserLabel.textContent = "@" + username;
   friendCodeEl.textContent = "friend code: " + username.toUpperCase();
+  setAuthMsg("");
 
   const push = {};
   if (profile.catName) { catName = profile.catName; nameEl.textContent = catName; savePref("mikanName", catName); }
@@ -1142,6 +1144,22 @@ window.addEventListener("mikan-auth", async (e) => {
 
   if (Object.keys(push).length) {
     try { await FB.pushProfile(push); } catch (err) {}
+  }
+
+  if (!hadUsername) {
+    const picked = prompt("Pick your online username so friends can find you:", emailUname || "");
+    if (picked && picked.trim()) {
+      try {
+        await FB.setUsername(picked.trim().slice(0, 16));
+        username = picked.trim().slice(0, 16).toLowerCase();
+        userNameInput.value = username;
+        authUserLabel.textContent = "@" + username;
+        friendCodeEl.textContent = "friend code: " + username.toUpperCase();
+        say(`you're now @${username}! 🐱`);
+      } catch (err) {
+        setAuthMsg(cleanErr(err));
+      }
+    }
   }
 
   await refreshFriendProfiles();
