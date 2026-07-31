@@ -26,30 +26,70 @@
   <main>
     <section class="stage-card">
       <div class="stage" id="stage">
+
+        <!-- interactive garden -->
+        <div class="bg-svg">
+          <svg viewBox="0 0 460 320" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+            <g id="sun" class="clickable">
+              <circle cx="408" cy="50" r="27" fill="#FFE082"/>
+              <circle cx="408" cy="50" r="18" fill="#FFF176"/>
+              <circle cx="400" cy="44" r="5" fill="#FFF59D"/>
+            </g>
+            <ellipse cx="92" cy="56" rx="38" ry="14" fill="#fff" opacity="0.85"/>
+            <ellipse cx="116" cy="48" rx="26" ry="12" fill="#fff" opacity="0.85"/>
+            <ellipse cx="236" cy="34" rx="30" ry="11" fill="#fff" opacity="0.7"/>
+            <g id="window" class="clickable">
+              <rect x="36" y="64" width="76" height="68" rx="10" fill="#B3E5FC" stroke="#fff" stroke-width="6"/>
+              <line x1="74" y1="64" x2="74" y2="132" stroke="#fff" stroke-width="5"/>
+              <line x1="36" y1="98" x2="112" y2="98" stroke="#fff" stroke-width="5"/>
+              <rect x="32" y="128" width="84" height="8" rx="4" fill="#A1887F"/>
+            </g>
+            <ellipse cx="230" cy="300" rx="150" ry="26" fill="#F8BBD0" opacity="0.5"/>
+            <ellipse cx="230" cy="300" rx="110" ry="18" fill="#F8BBD0" opacity="0.35"/>
+            <g id="flower1" class="clickable">
+              <path d="M 66 264 Q 64 240 66 222" stroke="#8BC34A" stroke-width="4" fill="none"/>
+              <circle cx="66" cy="218" r="7" fill="#F8BBD0"/>
+              <circle cx="59" cy="222" r="7" fill="#fff"/>
+              <circle cx="73" cy="222" r="7" fill="#fff"/>
+              <circle cx="66" cy="228" r="7" fill="#fff"/>
+              <circle cx="66" cy="222" r="5" fill="#FFE082"/>
+            </g>
+            <g id="flower2" class="clickable">
+              <path d="M 396 270 Q 394 246 396 230" stroke="#8BC34A" stroke-width="4" fill="none"/>
+              <circle cx="396" cy="226" r="6" fill="#FFCDD2"/>
+              <circle cx="390" cy="230" r="6" fill="#fff"/>
+              <circle cx="402" cy="230" r="6" fill="#fff"/>
+              <circle cx="396" cy="236" r="6" fill="#fff"/>
+              <circle cx="396" cy="230" r="4.5" fill="#FFE082"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="butterfly" id="butterfly">&#129419;</div>
         <div class="speech" id="speech"></div>
-        <div class="cat" id="cat" data-state="idle">
+        <div class="cat" id="cat" data-state="idle" data-outfit="bow">
 
           <svg class="catsvg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
 
             <!-- tail -->
             <g id="tail">
               <path d="M 84 196 Q 38 208 34 164 Q 31 130 62 126"
-                    fill="none" stroke="#FFB74D" stroke-width="16" stroke-linecap="round"/>
+                    fill="none" stroke="var(--cat-main)" stroke-width="16" stroke-linecap="round"/>
               <path d="M 40 150 L 46 146 M 37 165 L 45 162 M 42 136 L 48 133"
-                    stroke="#F9A825" stroke-width="4" stroke-linecap="round"/>
+                    stroke="var(--cat-dark)" stroke-width="4" stroke-linecap="round"/>
             </g>
 
             <!-- body -->
-            <ellipse cx="120" cy="188" rx="58" ry="46" fill="#FFB74D"/>
-            <ellipse cx="120" cy="196" rx="34" ry="26" fill="#FFE0B2"/>
+            <ellipse cx="120" cy="188" rx="58" ry="46" fill="var(--cat-main)"/>
+            <ellipse cx="120" cy="196" rx="34" ry="26" fill="var(--cat-belly)"/>
 
             <!-- paws -->
-            <ellipse cx="92" cy="212" rx="16" ry="10" fill="#FFB74D"/>
-            <ellipse cx="148" cy="212" rx="16" ry="10" fill="#FFB74D"/>
+            <ellipse cx="92" cy="212" rx="16" ry="10" fill="var(--cat-main)"/>
+            <ellipse cx="148" cy="212" rx="16" ry="10" fill="var(--cat-main)"/>
 
             <!-- ears -->
-            <polygon points="66,76 100,26 122,60" fill="#FFB74D"/>
-            <polygon points="174,76 140,26 118,60" fill="#FFB74D"/>
+            <polygon points="66,76 100,26 122,60" fill="var(--cat-main)"/>
+            <polygon points="174,76 140,26 118,60" fill="var(--cat-main)"/>
             <polygon points="80,66 98,38 110,58" fill="#FFCDD2"/>
             <polygon points="160,66 142,38 130,58" fill="#FFCDD2"/>
 
@@ -61,12 +101,12 @@
             </g>
 
             <!-- head -->
-            <ellipse cx="120" cy="102" rx="58" ry="52" fill="#FFB74D"/>
+            <ellipse cx="120" cy="102" rx="58" ry="52" fill="var(--cat-main)"/>
 
             <!-- forehead stripes -->
-            <path d="M 102 60 Q 108 74 104 82" stroke="#F9A825" stroke-width="5" stroke-linecap="round" fill="none"/>
-            <path d="M 120 56 Q 120 72 120 80" stroke="#F9A825" stroke-width="5" stroke-linecap="round" fill="none"/>
-            <path d="M 138 60 Q 132 74 136 82" stroke="#F9A825" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <path d="M 102 60 Q 108 74 104 82" stroke="var(--cat-dark)" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <path d="M 120 56 Q 120 72 120 80" stroke="var(--cat-dark)" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <path d="M 138 60 Q 132 74 136 82" stroke="var(--cat-dark)" stroke-width="5" stroke-linecap="round" fill="none"/>
 
             <!-- blush -->
             <ellipse cx="86" cy="118" rx="10" ry="6" fill="#F8BBD0" opacity="0.9"/>
@@ -151,6 +191,29 @@
                     stroke="#4E342E" stroke-width="3" stroke-linecap="round" fill="none"/>
             </g>
 
+            <!-- ============ OUTFITS ============ -->
+            <g id="hat">
+              <path d="M 90 56 Q 90 18 120 16 Q 150 18 150 56 Z" fill="#9575CD"/>
+              <ellipse cx="120" cy="57" rx="32" ry="9" fill="#B39DDB"/>
+              <rect x="86" y="48" width="68" height="10" rx="5" fill="#7E57C2"/>
+            </g>
+
+            <g id="scarf">
+              <path d="M 76 150 Q 120 170 164 150 L 168 162 Q 120 184 72 162 Z" fill="#AED581"/>
+              <rect x="104" y="146" width="32" height="10" rx="5" fill="#8BC34A"/>
+              <path d="M 122 156 Q 118 186 126 200 Q 130 186 132 156 Z" fill="#8BC34A"/>
+            </g>
+
+            <g id="glasses">
+              <g stroke="#78909C" stroke-width="4" fill="none">
+                <circle cx="96" cy="98" r="14"/>
+                <circle cx="144" cy="98" r="14"/>
+                <line x1="110" y1="98" x2="130" y2="98"/>
+                <line x1="82" y1="98" x2="68" y2="98"/>
+                <line x1="158" y1="98" x2="172" y2="98"/>
+              </g>
+            </g>
+
             <!-- ============ PROPS ============ -->
             <g id="bubble-zzz">
               <text x="158" y="52" class="z z1">z</text>
@@ -217,7 +280,42 @@
       <button id="btn-play" class="action play">&#127934; Play</button>
     </section>
 
-    <p class="footer">no dying allowed &#128147; stats dip and rise, but Mikan lives forever</p>
+    <section class="extra-card" id="snacks-card">
+      <h3>Snacks</h3>
+      <div class="mini-row">
+        <button class="mini snack" data-snack="fish">&#128031;</button>
+        <button class="mini snack" data-snack="dumpling">&#129361;</button>
+        <button class="mini snack" data-snack="cake">&#127856;</button>
+        <button class="mini snack" data-snack="cookie">&#127850;</button>
+      </div>
+    </section>
+
+    <section class="extra-card" id="outfits-card">
+      <h3>Outfit</h3>
+      <div class="mini-row">
+        <button class="mini active" data-outfit="bow">&#127873;</button>
+        <button class="mini" data-outfit="hat">&#127913;</button>
+        <button class="mini" data-outfit="scarf">&#129525;</button>
+        <button class="mini" data-outfit="glasses">&#128374;&#65039;</button>
+        <button class="mini" data-outfit="none">&#128683;</button>
+      </div>
+    </section>
+
+    <section class="extra-card" id="colors-card">
+      <h3>Colors</h3>
+      <div class="color-row"><span class="color-label">Bg</span><div class="swatches" id="bg-swatches"></div></div>
+      <div class="color-row"><span class="color-label">Cat</span><div class="swatches" id="cat-swatches"></div></div>
+    </section>
+
+    <section class="extra-card" id="history-card">
+      <button id="btn-history" class="action history">&#128200; History</button>
+      <div id="history-panel" hidden>
+        <canvas id="chart"></canvas>
+        <p class="footnote">last 2 hours &middot; one dot per minute</p>
+      </div>
+    </section>
+
+    <p class="footer">no dying allowed &#128147; tap the cat to pet her, and poke the sun, window &amp; flowers &#127803;</p>
   </main>
 
 <script src="script.js"></script>

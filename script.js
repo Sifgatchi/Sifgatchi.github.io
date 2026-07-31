@@ -5,25 +5,22 @@ const soundBtn = document.getElementById("btn-sound");
 const nameEl = document.getElementById("catname");
 const renameBtn = document.getElementById("btn-rename");
 
-/* ---------------- name (saved in localStorage AND cookie) ---------------- */
-function readName() {
-  let n = null;
-  try { n = localStorage.getItem("mikanName"); } catch (e) {}
-  if (n) return n;
-  const m = document.cookie.match(/(?:^|;\s*)mikanName=([^;]*)/);
-  if (m) { try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; } }
-  return "Mikan";
-}
-
-function saveName(n) {
-  try { localStorage.setItem("mikanName", n); } catch (e) {}
+/* ---------------- prefs (localStorage AND cookie) ---------------- */
+function savePref(k, v) {
+  try { localStorage.setItem(k, v); } catch (e) {}
   try {
-    document.cookie = "mikanName=" + encodeURIComponent(n) +
-      "; max-age=31536000; path=/; SameSite=Lax";
+    document.cookie = k + "=" + encodeURIComponent(v) + "; max-age=31536000; path=/; SameSite=Lax";
   } catch (e) {}
 }
+function readPref(k) {
+  try { const v = localStorage.getItem(k); if (v !== null && v !== "") return v; } catch (e) {}
+  const m = document.cookie.match(new RegExp("(?:^|;\\s*)" + k + "=([^;]*)"));
+  if (m) { try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; } }
+  return null;
+}
 
-let catName = readName();
+/* ---------------- name ---------------- */
+let catName = readPref("mikanName") || "Mikan";
 nameEl.textContent = catName;
 
 renameBtn.addEventListener("click", () => {
@@ -31,7 +28,7 @@ renameBtn.addEventListener("click", () => {
   if (n && n.trim()) {
     catName = n.trim().slice(0, 20);
     nameEl.textContent = catName;
-    saveName(catName);
+    savePref("mikanName", catName);
     say(`ok, I'm ${catName}! 🐱`);
   }
 });
@@ -63,6 +60,7 @@ let busy = false;
 let wasLow = false;
 let speechTimer = null;
 let lastNotify = 0;
+let tickCount = 0;
 const NOTIFY_GAP = 10 * 60 * 1000;
 
 function clamp(n) { return Math.max(MIN, Math.min(MAX, n)); }
@@ -102,6 +100,8 @@ const sounds = {
   sleep() { tone(660, 0, 0.3, "sine", 0.1); tone(550, 0.35, 0.4, "sine", 0.1); },
   wake() { tone(784, 0, 0.12, "triangle"); tone(1047, 0.13, 0.22, "triangle"); },
   sad() { tone(330, 0, 0.25, "sine", 0.1); tone(262, 0.28, 0.35, "sine", 0.1); },
+  purr() { tone(110, 0, 0.45, "triangle", 0.12); tone(145, 0.12, 0.45, "triangle", 0.1); tone(115, 0.28, 0.4, "triangle", 0.1); },
+  pop() { tone(700, 0, 0.06, "sine", 0.12); tone(880, 0.06, 0.07, "sine", 0.1); },
 };
 
 soundBtn.addEventListener("click", () => {
@@ -207,7 +207,18 @@ function doAction(btn, keyAmounts, face, msg, emojis, sound) {
   }, 2400);
 }
 
-/* ---------------- actions ---------------- */
+function miniAction(effects, msg, emojis, duration = 1800) {
+  if (busy || sleeping) return;
+  setBusy(true);
+  for (const k in effects) adjust(k, effects[k]);
+  cat.dataset.state = "eat";
+  say(msg);
+  popEmoji(emojis);
+  sounds.eat();
+  setTimeout(() => { setBusy(false); refreshMood(); }, duration);
+}
+
+/* ---------------- main actions ---------------- */
 btnEat.addEventListener("click", () =>
   doAction(btnEat, { hunger: 35, happiness: 6 }, "eat", "nom nom nom! 🍜", ["🍜", "🐟", "🍥", "🥟"], "eat"));
 
@@ -236,6 +247,264 @@ btnSleep.addEventListener("click", () => {
   render();
 });
 
+/* ---------------- snacks ---------------- */
+const SNACKS = {
+  fish:     { effects: { hunger: 30, happiness: 5 },  msg: "fresh fishy! 🐟",      emojis: ["🐟", "🐠"] },
+  dumpling: { effects: { hunger: 25 },                msg: "a warm dumpling! 🥟",   emojis: ["🥟", "😋"] },
+  cake:     { effects: { hunger: 20, happiness: 15 }, msg: "cake!!! 🍰",           emojis: ["🍰", "🍓"] },
+  cookie:   { effects: { hunger: 15, happiness: 10 }, msg: "crunchy cookie! 🍪",   emojis: ["🍪", "🥛"] },
+};
+
+document.querySelectorAll(".snack").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const s = SNACKS[btn.dataset.snack];
+    if (s) miniAction(s.effects, s.msg, s.emojis);
+  });
+});
+
+/* ---------------- outfits ---------------- */
+let outfit = readPref("mikanOutfit") || "bow";
+cat.dataset.outfit = outfit;
+
+document.querySelectorAll("#outfits-card .mini").forEach((btn) => {
+  if (btn.dataset.outfit === outfit) btn.classList.add("active");
+  btn.addEventListener("click", () => {
+    outfit = btn.dataset.outfit;
+    cat.dataset.outfit = outfit;
+    savePref("mikanOutfit", outfit);
+    document.querySelectorAll("#outfits-card .mini").forEach((b) =>
+      b.classList.toggle("active", b.dataset.outfit === outfit));
+    say("fashion!! ✨");
+    sounds.pop();
+  });
+});
+
+/* ---------------- colors ---------------- */
+const BG_COLORS = {
+  mint:     { bg: "#CDECCF", soft: "#E7F7E6", deep: "#A5D6A7" },
+  lavender: { bg: "#D8CFEC", soft: "#ECE7F7", deep: "#B9A7D9" },
+  peach:    { bg: "#FBE3CF", soft: "#FFF3E7", deep: "#F5C59A" },
+  blue:     { bg: "#CFE3F5", soft: "#E7F1FB", deep: "#A7C8EC" },
+  yellow:   { bg: "#F5EBCB", soft: "#FBF6E3", deep: "#E8D9A0" },
+};
+const CAT_COLORS = {
+  orange: { main: "#FFB74D", dark: "#F9A825", belly: "#FFE0B2" },
+  cream:  { main: "#F5D9A8", dark: "#E3B878", belly: "#FBEBD3" },
+  pink:   { main: "#F5AFC0", dark: "#E8789A", belly: "#FBD3DC" },
+  gray:   { main: "#AFC7D8", dark: "#6E8FA8", belly: "#D3E0EA" },
+  minty:  { main: "#A8D8B9", dark: "#63A87F", belly: "#CDEBD7" },
+};
+
+function applyBg(key) {
+  const c = BG_COLORS[key];
+  if (!c) return;
+  const root = document.documentElement.style;
+  root.setProperty("--mint", c.bg);
+  root.setProperty("--mint-soft", c.soft);
+  root.setProperty("--mint-deep", c.deep);
+  savePref("mikanBg", key);
+}
+
+function applyCat(key) {
+  const c = CAT_COLORS[key];
+  if (!c) return;
+  const root = document.documentElement.style;
+  root.setProperty("--cat-main", c.main);
+  root.setProperty("--cat-dark", c.dark);
+  root.setProperty("--cat-belly", c.belly);
+  savePref("mikanCat", key);
+}
+
+function buildSwatches(container, options, current, onPick) {
+  container.innerHTML = "";
+  for (const key of Object.keys(options)) {
+    const b = document.createElement("button");
+    b.className = "swatch" + (key === current ? " active" : "");
+    b.title = key;
+    b.style.background = options[key].main || options[key].bg;
+    b.addEventListener("click", () => onPick(key));
+    container.appendChild(b);
+  }
+}
+
+buildSwatches(document.getElementById("bg-swatches"), BG_COLORS, readPref("mikanBg") || "mint", (k) => {
+  applyBg(k);
+  document.querySelectorAll("#bg-swatches .swatch").forEach((s) =>
+    s.classList.toggle("active", s.title === k));
+  sounds.pop();
+});
+buildSwatches(document.getElementById("cat-swatches"), CAT_COLORS, readPref("mikanCat") || "orange", (k) => {
+  applyCat(k);
+  document.querySelectorAll("#cat-swatches .swatch").forEach((s) =>
+    s.classList.toggle("active", s.title === k));
+  sounds.pop();
+});
+
+applyBg(readPref("mikanBg") || "mint");
+applyCat(readPref("mikanCat") || "orange");
+
+/* ---------------- petting ---------------- */
+cat.addEventListener("pointerdown", () => {
+  if (busy) return;
+  stats.happiness = clamp(stats.happiness + 4);
+  if (sleeping) {
+    say("mrrrp?… 🥱");
+  } else {
+    popEmoji(["💗", "💖", "✨"], 6);
+    sounds.purr();
+    say("purrr 🐾");
+    cat.classList.add("petted");
+    setTimeout(() => cat.classList.remove("petted"), 450);
+  }
+  render();
+});
+
+/* ---------------- garden ---------------- */
+function wiggleEl(el) {
+  el.classList.remove("wiggle");
+  void el.offsetWidth;
+  el.classList.add("wiggle");
+}
+
+document.getElementById("sun").addEventListener("pointerdown", () => {
+  wiggleEl(document.getElementById("sun"));
+  popEmoji(["☀️", "✨"], 5);
+  sounds.pop();
+  say("such a sunny day! ☀️");
+});
+
+document.getElementById("window").addEventListener("pointerdown", () => {
+  wiggleEl(document.getElementById("window"));
+  popEmoji(["☁️", "🌤️"], 5);
+  sounds.pop();
+  stats.happiness = clamp(stats.happiness + 1);
+  say("peek-a-boo! the view is lovely 🌤️");
+  render();
+});
+
+document.querySelectorAll("#flower1, #flower2").forEach((f) => {
+  f.addEventListener("pointerdown", () => {
+    wiggleEl(f);
+    popEmoji(["🌸", "🌼"], 5);
+    sounds.pop();
+    stats.happiness = clamp(stats.happiness + 1);
+    say("pretty flower! 🌸");
+    render();
+  });
+});
+
+/* butterfly */
+const butterfly = document.getElementById("butterfly");
+butterfly.addEventListener("pointerdown", () => {
+  butterfly.classList.remove("show");
+  stats.happiness = clamp(stats.happiness + 2);
+  popEmoji(["🦋", "💖"], 5);
+  sounds.play();
+  say("ooh, a butterfly! 🦋");
+  render();
+});
+
+function spawnButterfly() {
+  butterfly.classList.add("show");
+  setTimeout(() => butterfly.classList.remove("show"), 19000);
+}
+function scheduleButterfly() {
+  const delay = 20000 + Math.random() * 25000;
+  setTimeout(() => { spawnButterfly(); scheduleButterfly(); }, delay);
+}
+
+/* ---------------- history chart ---------------- */
+let history = [];
+try {
+  const raw = readPref("mikanHistory");
+  if (raw) history = JSON.parse(raw);
+  if (!Array.isArray(history)) history = [];
+  history = history.slice(-120);
+} catch (e) { history = []; }
+
+function pushHistory() {
+  history.push({
+    t: Date.now(),
+    h: stats.hunger, th: stats.thirst, e: stats.energy, ha: stats.happiness,
+  });
+  if (history.length > 120) history.shift();
+  savePref("mikanHistory", JSON.stringify(history));
+}
+
+const CHART_STATS = [
+  { key: "h",  color: "#FFB74D", label: "hunger" },
+  { key: "th", color: "#4FC3F7", label: "thirst" },
+  { key: "e",  color: "#A5D6A7", label: "energy" },
+  { key: "ha", color: "#F06292", label: "happiness" },
+];
+
+function drawChart() {
+  const panel = document.getElementById("history-panel");
+  const canvas = document.getElementById("chart");
+  const dpr = window.devicePixelRatio || 1;
+  const w = panel.clientWidth || 300;
+  const h = 150;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + "px";
+  canvas.style.height = h + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.strokeStyle = "#E8E2D6";
+  ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75].forEach((f) => {
+    const y = Math.round(h * f);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  });
+
+  if (history.length < 2) {
+    ctx.fillStyle = "#6d8f6e";
+    ctx.font = "12px Quicksand, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("not enough history yet — check back in a few minutes", w / 2, h / 2);
+    return;
+  }
+
+  const n = history.length;
+  const step = w / (n - 1);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  for (const s of CHART_STATS) {
+    ctx.beginPath();
+    history.forEach((d, i) => {
+      const x = i * step;
+      const y = h - (d[s.key] / 100) * (h - 16) - 8;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
+
+  ctx.font = "11px Quicksand, sans-serif";
+  let lx = 8;
+  CHART_STATS.forEach((s) => {
+    ctx.fillStyle = s.color;
+    ctx.beginPath(); ctx.arc(lx + 5, h - 8, 4, 0, 7); ctx.fill();
+    ctx.fillStyle = "#4e342e";
+    ctx.fillText(s.label, lx + 13, h - 4);
+    lx += ctx.measureText(s.label).width + 28;
+  });
+}
+
+const historyBtn = document.getElementById("btn-history");
+const historyPanel = document.getElementById("history-panel");
+historyBtn.addEventListener("click", () => {
+  historyPanel.hidden = !historyPanel.hidden;
+  historyBtn.textContent = historyPanel.hidden ? "📈 History" : "🙈 Hide";
+  if (!historyPanel.hidden) drawChart();
+});
+window.addEventListener("resize", () => {
+  if (!historyPanel.hidden) drawChart();
+});
+
 /* ---------------- slow decay — Mikan can never die ---------------- */
 const TICK = 10000;
 setInterval(() => {
@@ -259,6 +528,9 @@ setInterval(() => {
   }
   render();
   refreshMood();
+
+  tickCount++;
+  if (tickCount % 6 === 0) pushHistory();
 
   if (document.hidden) {
     const lowest = Object.keys(stats).reduce((a, b) => (stats[a] <= stats[b] ? a : b));
@@ -355,6 +627,8 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
   });
 }
 
+pushHistory();
 render();
 refreshMood();
 scheduleIdle();
+scheduleButterfly();
