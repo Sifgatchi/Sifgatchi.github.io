@@ -102,6 +102,7 @@ const sounds = {
   sad() { tone(330, 0, 0.25, "sine", 0.1); tone(262, 0.28, 0.35, "sine", 0.1); },
   purr() { tone(110, 0, 0.45, "triangle", 0.12); tone(145, 0.12, 0.45, "triangle", 0.1); tone(115, 0.28, 0.4, "triangle", 0.1); },
   pop() { tone(700, 0, 0.06, "sine", 0.12); tone(880, 0.06, 0.07, "sine", 0.1); },
+  sneeze() { tone(520, 0, 0.1, "sawtooth", 0.08); tone(340, 0.12, 0.16, "sawtooth", 0.08); },
 };
 
 soundBtn.addEventListener("click", () => {
@@ -305,14 +306,14 @@ function applyBg(key) {
   savePref("mikanBg", key);
 }
 
-function applyCat(key) {
+function applyCat(key, persist = true) {
   const c = CAT_COLORS[key];
   if (!c) return;
   const root = document.documentElement.style;
   root.setProperty("--cat-main", c.main);
   root.setProperty("--cat-dark", c.dark);
   root.setProperty("--cat-belly", c.belly);
-  savePref("mikanCat", key);
+  if (persist) savePref("mikanCat", key);
 }
 
 function buildSwatches(container, options, current, onPick) {
@@ -632,3 +633,262 @@ render();
 refreshMood();
 scheduleIdle();
 scheduleButterfly();
+
+/* ================= MINI-GAMES ================= */
+const gameOverlay = document.getElementById("game-overlay");
+const gameScoreEl = document.getElementById("game-score");
+const gameTimeEl = document.getElementById("game-time");
+let game = null;
+
+function spawnGameItem(kind, onHit) {
+  const el = document.createElement("div");
+  el.className = "game-item" + (kind === "balloon" ? " balloon" : "");
+  el.textContent = kind === "balloon" ? "🎈" : "🐟";
+  el.style.left = (8 + Math.random() * 78) + "%";
+  if (kind === "balloon") {
+    el.style.bottom = "4%";
+  } else {
+    el.style.top = (52 + Math.random() * 28) + "%";
+  }
+  el.addEventListener("pointerdown", (e) => {
+    e.stopPropagation();
+    onHit(el);
+  });
+  stage.appendChild(el);
+  return el;
+}
+
+function startGame(kind) {
+  if (busy || sleeping || game) return;
+  setBusy(true);
+  game = { kind, score: 0, time: 20 };
+  gameScoreEl.textContent = "0";
+  gameTimeEl.textContent = "20";
+  gameOverlay.hidden = false;
+  sounds.play();
+  game.interval = setInterval(() => {
+    game.time--;
+    gameTimeEl.textContent = game.time;
+    const el = spawnGameItem(kind, (item) => {
+      item.classList.add("pop");
+      sounds.pop();
+      game.score++;
+      gameScoreEl.textContent = game.score;
+      setTimeout(() => item.remove(), 400);
+    });
+    const life = kind === "balloon" ? 4200 : 1400;
+    setTimeout(() => { if (el.parentNode) el.remove(); }, life);
+    if (game.time <= 0) endGame();
+  }, kind === "balloon" ? 700 : 900);
+}
+
+function endGame() {
+  clearInterval(game.interval);
+  document.querySelectorAll(".game-item").forEach((el) => el.remove());
+  gameOverlay.hidden = true;
+  const score = game.score;
+  const ha = Math.min(40, score * 2);
+  stats.happiness = clamp(stats.happiness + ha);
+  render();
+  say(`you got ${score}! +${ha} happiness 🎉`);
+  game = null;
+  setBusy(false);
+}
+
+document.getElementById("btn-fishing").addEventListener("click", () => startGame("fish"));
+document.getElementById("btn-balloon").addEventListener("click", () => startGame("balloon"));
+
+/* ================= VISITING ANIMALS ================= */
+const VISITORS = [
+  { e: "🐶", fly: false }, { e: "🐰", fly: false }, { e: "🐹", fly: false },
+  { e: "🦊", fly: false }, { e: "🐦", fly: true }, { e: "🐧", fly: true },
+  { e: "🐿️", fly: false }, { e: "🦔", fly: false },
+];
+
+function spawnVisitor() {
+  if (busy || sleeping) return;
+  const v = VISITORS[Math.floor(Math.random() * VISITORS.length)];
+  const el = document.createElement("div");
+  el.className = "visitor show " + (v.fly ? "fly" : "walk");
+  el.textContent = v.e;
+  el.addEventListener("pointerdown", (e) => {
+    e.stopPropagation();
+    el.remove();
+    stats.happiness = clamp(stats.happiness + 2);
+    popEmoji(["💖", "✨"], 5);
+    sounds.play();
+    say(`${v.e} came to visit you!`);
+    render();
+  });
+  stage.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 16000);
+}
+function scheduleVisitor() {
+  const delay = 25000 + Math.random() * 30000;
+  setTimeout(() => { spawnVisitor(); scheduleVisitor(); }, delay);
+}
+
+/* ================= POKE SPOTS ================= */
+function pokeStats(n, msg, emojis, sound) {
+  if (busy || game) return;
+  stats.happiness = clamp(stats.happiness + n);
+  say(msg);
+  popEmoji(emojis, 5);
+  sounds[sound]();
+  render();
+}
+
+const pokeZones = {
+  "poke-nose": () => pokeStats(1, "achoo! 🤧", ["🤧", "✨"], "sneeze"),
+  "poke-ear-l": () => pokeStats(1, "hey! my ears! 🙀", ["🙀", "❗"], "sneeze"),
+  "poke-ear-r": () => pokeStats(1, "hey! my ears! 🙀", ["🙀", "❗"], "sneeze"),
+  "poke-tummy": () => {
+    if (busy || game) return;
+    stats.happiness = clamp(stats.happiness + 3);
+    say("hehe, tickles! 😹");
+    popEmoji(["😹", "💖"], 6);
+    sounds.purr();
+    cat.classList.add("petted");
+    setTimeout(() => cat.classList.remove("petted"), 450);
+    render();
+  },
+  "poke-tail": () => {
+    if (busy || game) return;
+    stats.happiness = clamp(stats.happiness + 1);
+    say("that's my tail! 🐈");
+    tailSwish();
+    popEmoji(["🐈", "🐾"], 4);
+    sounds.pop();
+    render();
+  },
+};
+
+Object.keys(pokeZones).forEach((id) => {
+  document.getElementById(id).addEventListener("pointerdown", (e) => {
+    e.stopPropagation();
+    pokeZones[id]();
+  });
+});
+
+/* ================= PROFILE & FRIENDS ================= */
+let username = readPref("mikanUser") || "";
+let avatar = readPref("mikanAvatar") || "🐱";
+let visiting = null;
+
+const userNameInput = document.getElementById("user-name");
+const btnSaveUser = document.getElementById("btn-save-user");
+const friendCodeEl = document.getElementById("friend-code");
+const addFriendInput = document.getElementById("add-friend");
+const btnAddFriend = document.getElementById("btn-add-friend");
+const friendListEl = document.getElementById("friend-list");
+const visitBar = document.getElementById("visit-bar");
+const visitText = document.getElementById("visit-text");
+const btnBackHome = document.getElementById("btn-back-home");
+
+let friends = [];
+try { friends = JSON.parse(readPref("mikanFriends") || "[]"); } catch (e) { friends = []; }
+if (!Array.isArray(friends)) friends = [];
+
+userNameInput.value = username;
+friendCodeEl.textContent = username ? "friend code: " + username.toUpperCase() : "";
+
+btnSaveUser.addEventListener("click", () => {
+  username = userNameInput.value.trim().slice(0, 16);
+  if (username) {
+    savePref("mikanUser", username);
+    friendCodeEl.textContent = "friend code: " + username.toUpperCase();
+    say(`hi, I'm ${username}! 🐱`);
+  }
+});
+userNameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") btnSaveUser.click(); });
+
+const AVATARS = ["🐱", "🐈", "😺", "🐈‍⬛", "🐯", "🐾"];
+const avatarBox = document.getElementById("avatar-swatches");
+AVATARS.forEach((a) => {
+  const b = document.createElement("button");
+  b.className = "avatar-btn" + (a === avatar ? " active" : "");
+  b.textContent = a;
+  b.addEventListener("click", () => {
+    avatar = a;
+    savePref("mikanAvatar", avatar);
+    document.querySelectorAll(".avatar-btn").forEach((x) =>
+      x.classList.toggle("active", x.textContent === avatar));
+    say("new look! ✨");
+    sounds.pop();
+  });
+  avatarBox.appendChild(b);
+});
+
+function renderFriends() {
+  friendListEl.innerHTML = "";
+  friends.forEach((f) => {
+    const chip = document.createElement("div");
+    chip.className = "friend-chip";
+    const name = document.createElement("span");
+    name.className = "chip-name";
+    name.innerHTML = `<span>${avatar}</span> ${f}`;
+    const btns = document.createElement("span");
+    const visit = document.createElement("button");
+    visit.textContent = "👋";
+    visit.title = "visit";
+    visit.addEventListener("click", () => visitFriend(f));
+    const remove = document.createElement("button");
+    remove.textContent = "✖️";
+    remove.title = "remove";
+    remove.addEventListener("click", () => {
+      friends = friends.filter((x) => x !== f);
+      savePref("mikanFriends", JSON.stringify(friends));
+      renderFriends();
+    });
+    btns.appendChild(visit);
+    btns.appendChild(remove);
+    chip.appendChild(name);
+    chip.appendChild(btns);
+    friendListEl.appendChild(chip);
+  });
+}
+
+btnAddFriend.addEventListener("click", () => {
+  const f = addFriendInput.value.trim().slice(0, 16);
+  if (f && !friends.includes(f)) {
+    friends.push(f);
+    savePref("mikanFriends", JSON.stringify(friends));
+    addFriendInput.value = "";
+    renderFriends();
+    say(`${f} added to your friends! 💛`);
+    sounds.pop();
+  }
+});
+addFriendInput.addEventListener("keydown", (e) => { if (e.key === "Enter") btnAddFriend.click(); });
+
+function visitFriend(f) {
+  if (visiting) return;
+  visiting = {
+    name: f,
+    prevName: catName,
+    prevOutfit: cat.dataset.outfit,
+    prevCat: readPref("mikanCat") || "orange",
+  };
+  const colors = Object.keys(CAT_COLORS);
+  const outfits = ["bow", "hat", "scarf", "glasses"];
+  applyCat(colors[Math.floor(Math.random() * colors.length)], false);
+  cat.dataset.outfit = outfits[Math.floor(Math.random() * outfits.length)];
+  nameEl.textContent = f;
+  visitText.textContent = `visiting ${f}'s cat`;
+  visitBar.hidden = false;
+  say(`hi, I'm ${f}! purr 👋`);
+}
+
+btnBackHome.addEventListener("click", () => {
+  if (!visiting) return;
+  nameEl.textContent = visiting.prevName;
+  cat.dataset.outfit = visiting.prevOutfit;
+  applyCat(visiting.prevCat);
+  visitBar.hidden = true;
+  visiting = null;
+  say("welcome home! 🏠");
+  sounds.wake();
+});
+
+renderFriends();
+scheduleVisitor();

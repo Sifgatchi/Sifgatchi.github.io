@@ -67,6 +67,10 @@
 
         <div class="butterfly" id="butterfly">&#129419;</div>
         <div class="speech" id="speech"></div>
+        <div id="game-overlay" hidden>
+          <span>Score <b id="game-score">0</b></span>
+          <span>Time <b id="game-time">20</b></span>
+        </div>
         <div class="cat" id="cat" data-state="idle" data-outfit="bow">
 
           <svg class="catsvg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
@@ -246,6 +250,12 @@
             </g>
 
           </svg>
+
+          <div class="poke nose" id="poke-nose" title="nose"></div>
+          <div class="poke ear" id="poke-ear-l" title="left ear"></div>
+          <div class="poke ear right" id="poke-ear-r" title="right ear"></div>
+          <div class="poke tummy" id="poke-tummy" title="tummy"></div>
+          <div class="poke tail" id="poke-tail" title="tail"></div>
         </div>
       </div>
     </section>
@@ -315,7 +325,39 @@
       </div>
     </section>
 
-    <p class="footer">no dying allowed &#128147; tap the cat to pet her, and poke the sun, window &amp; flowers &#127803;</p>
+    <section class="extra-card" id="games-card">
+      <h3>Mini-games</h3>
+      <div class="mini-row">
+        <button id="btn-fishing" class="action game">&#128031; Fishing</button>
+        <button id="btn-balloon" class="action game">&#127880; Balloons</button>
+      </div>
+      <p class="footnote">20 seconds each &middot; tap the fish &amp; balloons &middot; happiness reward</p>
+    </section>
+
+    <section class="extra-card" id="profile-card">
+      <h3>Profile &amp; Friends</h3>
+      <div class="profile-row">
+        <input id="user-name" maxlength="16" placeholder="your username">
+        <button id="btn-save-user" class="action history">Save</button>
+      </div>
+      <div class="profile-row">
+        <span class="color-label">Cat</span>
+        <div id="avatar-swatches"></div>
+      </div>
+      <div class="profile-row"><span class="friend-code" id="friend-code"></span></div>
+      <div class="profile-row">
+        <input id="add-friend" maxlength="16" placeholder="add friend by username">
+        <button id="btn-add-friend" class="action history">Add</button>
+      </div>
+      <div id="friend-list"></div>
+      <div id="visit-bar" hidden>
+        <span id="visit-text"></span>
+        <button id="btn-back-home" class="action history">&#11013;&#65039; Home</button>
+      </div>
+      <p class="footnote">online visiting needs a server &middot; friends are saved on this device for now</p>
+    </section>
+
+    <p class="footer">no dying allowed &#128147; tap the cat to pet her, poke her nose/tummy/ears/tail, and click visitors &#127803;</p>
   </main>
 
 <script src="script.js"></script>
