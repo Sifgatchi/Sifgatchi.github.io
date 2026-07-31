@@ -120,7 +120,10 @@
       const ud = await fb.dbMod.getDoc(fb.dbMod.doc(db, "usernames", uname));
       if (ud.exists()) throw new Error("that username is taken");
       await fb.dbMod.setDoc(fb.dbMod.doc(db, "usernames", uname), { uid: state.uid });
-      await fb.dbMod.deleteDoc(fb.dbMod.doc(db, "usernames", old));
+      const od = await fb.dbMod.getDoc(fb.dbMod.doc(db, "usernames", old));
+      if (od.exists()) {
+        await fb.dbMod.deleteDoc(fb.dbMod.doc(db, "usernames", old));
+      }
       await fb.dbMod.setDoc(fb.dbMod.doc(db, "users", state.uid), { username: uname }, { merge: true });
       state.username = uname;
       if (state.profile) state.profile.username = uname;

@@ -1,4 +1,4 @@
-const CACHE = "mikan-v8";
+const CACHE = "mikan-v9";
 const ASSETS = [
   "./",
   "./index.html",
