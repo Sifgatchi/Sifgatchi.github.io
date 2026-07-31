@@ -1,9 +1,10 @@
-const CACHE = "mikan-v5";
+const CACHE = "mikan-v6";
 const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
   "./script.js",
+  "./firebase.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png"

@@ -30,6 +30,7 @@ renameBtn.addEventListener("click", () => {
     nameEl.textContent = catName;
     savePref("mikanName", catName);
     say(`ok, I'm ${catName}! 🐱`);
+    if (window.FB && FB.state.uid) FB.pushProfile({ catName }).catch(() => {});
   }
 });
 
@@ -277,6 +278,7 @@ document.querySelectorAll("#outfits-card .mini").forEach((btn) => {
       b.classList.toggle("active", b.dataset.outfit === outfit));
     say("fashion!! ✨");
     sounds.pop();
+    if (window.FB && FB.state.uid) FB.pushProfile({ outfit }).catch(() => {});
   });
 });
 
@@ -333,12 +335,14 @@ buildSwatches(document.getElementById("bg-swatches"), BG_COLORS, readPref("mikan
   document.querySelectorAll("#bg-swatches .swatch").forEach((s) =>
     s.classList.toggle("active", s.title === k));
   sounds.pop();
+  if (window.FB && FB.state.uid) FB.pushProfile({ bgColor: k }).catch(() => {});
 });
 buildSwatches(document.getElementById("cat-swatches"), CAT_COLORS, readPref("mikanCat") || "orange", (k) => {
   applyCat(k);
   document.querySelectorAll("#cat-swatches .swatch").forEach((s) =>
     s.classList.toggle("active", s.title === k));
   sounds.pop();
+  if (window.FB && FB.state.uid) FB.pushProfile({ catColor: k }).catch(() => {});
 });
 
 applyBg(readPref("mikanBg") || "mint");
@@ -532,6 +536,10 @@ setInterval(() => {
 
   tickCount++;
   if (tickCount % 6 === 0) pushHistory();
+
+  if (window.FB && FB.state.uid && tickCount % 6 === 0) {
+    FB.pushStats({ h: stats.hunger, th: stats.thirst, e: stats.energy, ha: stats.happiness }).catch(() => {});
+  }
 
   if (document.hidden) {
     const lowest = Object.keys(stats).reduce((a, b) => (stats[a] <= stats[b] ? a : b));
@@ -786,6 +794,7 @@ const visitText = document.getElementById("visit-text");
 const btnBackHome = document.getElementById("btn-back-home");
 
 let friends = [];
+const friendProfiles = {};
 try { friends = JSON.parse(readPref("mikanFriends") || "[]"); } catch (e) { friends = []; }
 if (!Array.isArray(friends)) friends = [];
 
@@ -793,8 +802,14 @@ userNameInput.value = username;
 friendCodeEl.textContent = username ? "friend code: " + username.toUpperCase() : "";
 
 btnSaveUser.addEventListener("click", () => {
-  username = userNameInput.value.trim().slice(0, 16);
-  if (username) {
+  const n = userNameInput.value.trim().slice(0, 16);
+  if (window.FB && FB.state.uid) {
+    userNameInput.value = username;
+    say(`your online name is @${username} 🐱`);
+    return;
+  }
+  if (n) {
+    username = n;
     savePref("mikanUser", username);
     friendCodeEl.textContent = "friend code: " + username.toUpperCase();
     say(`hi, I'm ${username}! 🐱`);
@@ -815,6 +830,7 @@ AVATARS.forEach((a) => {
       x.classList.toggle("active", x.textContent === avatar));
     say("new look! ✨");
     sounds.pop();
+    if (window.FB && FB.state.uid) FB.pushProfile({ avatar }).catch(() => {});
   });
   avatarBox.appendChild(b);
 });
@@ -826,7 +842,10 @@ function renderFriends() {
     chip.className = "friend-chip";
     const name = document.createElement("span");
     name.className = "chip-name";
-    name.innerHTML = `<span>${avatar}</span> ${f}`;
+    const prof = friendProfiles[f];
+    const emoji = (prof && prof.avatar) || avatar;
+    const dot = prof && prof.online ? " 🟢" : "";
+    name.innerHTML = `<span>${emoji}</span> ${f}${dot}`;
     const btns = document.createElement("span");
     const visit = document.createElement("button");
     visit.textContent = "👋";
@@ -835,9 +854,13 @@ function renderFriends() {
     const remove = document.createElement("button");
     remove.textContent = "✖️";
     remove.title = "remove";
-    remove.addEventListener("click", () => {
+    remove.addEventListener("click", async () => {
       friends = friends.filter((x) => x !== f);
       savePref("mikanFriends", JSON.stringify(friends));
+      if (window.FB && FB.state.uid) {
+        try { await FB.removeFriend(f); } catch (e) {}
+      }
+      delete friendProfiles[f];
       renderFriends();
     });
     btns.appendChild(visit);
@@ -848,14 +871,28 @@ function renderFriends() {
   });
 }
 
-btnAddFriend.addEventListener("click", () => {
+btnAddFriend.addEventListener("click", async () => {
   const f = addFriendInput.value.trim().slice(0, 16);
-  if (f && !friends.includes(f)) {
+  if (!f || friends.includes(f)) return;
+  if (window.FB && FB.state.uid) {
+    addFriendInput.value = "";
+    try {
+      const p = await FB.addFriend(f);
+      friends.push(f);
+      friendProfiles[f] = p;
+      savePref("mikanFriends", JSON.stringify(friends));
+      renderFriends();
+      say(`@${f} added to your friends! 💛`);
+      sounds.pop();
+    } catch (err) {
+      say(cleanErr(err), 3000);
+    }
+  } else {
     friends.push(f);
     savePref("mikanFriends", JSON.stringify(friends));
     addFriendInput.value = "";
     renderFriends();
-    say(`${f} added to your friends! 💛`);
+    say(`${f} added locally — sign in to go online! 💛`);
     sounds.pop();
   }
 });
@@ -869,20 +906,32 @@ function visitFriend(f) {
     prevOutfit: cat.dataset.outfit,
     prevCat: readPref("mikanCat") || "orange",
   };
-  const colors = Object.keys(CAT_COLORS);
-  const outfits = ["bow", "hat", "scarf", "glasses"];
-  applyCat(colors[Math.floor(Math.random() * colors.length)], false);
-  cat.dataset.outfit = outfits[Math.floor(Math.random() * outfits.length)];
-  nameEl.textContent = f;
-  visitText.textContent = `visiting ${f}'s cat`;
+  const prof = friendProfiles[f];
+  if (prof && prof.catColor && CAT_COLORS[prof.catColor]) {
+    applyCat(prof.catColor, false);
+    cat.dataset.outfit = prof.outfit || "bow";
+    outfit = cat.dataset.outfit;
+    nameEl.textContent = prof.catName || prof.username;
+    visitText.textContent = `visiting @${prof.username}'s cat${prof.online ? " 💚 online" : " (offline)"}`;
+    say(`hi, I'm ${prof.catName || prof.username}! purr 👋`);
+  } else {
+    const colors = Object.keys(CAT_COLORS);
+    const outfits = ["bow", "hat", "scarf", "glasses"];
+    applyCat(colors[Math.floor(Math.random() * colors.length)], false);
+    cat.dataset.outfit = outfits[Math.floor(Math.random() * outfits.length)];
+    outfit = cat.dataset.outfit;
+    nameEl.textContent = f;
+    visitText.textContent = `visiting ${f}'s cat`;
+    say(`hi, I'm ${f}! purr 👋`);
+  }
   visitBar.hidden = false;
-  say(`hi, I'm ${f}! purr 👋`);
 }
 
 btnBackHome.addEventListener("click", () => {
   if (!visiting) return;
   nameEl.textContent = visiting.prevName;
   cat.dataset.outfit = visiting.prevOutfit;
+  outfit = visiting.prevOutfit;
   applyCat(visiting.prevCat);
   visitBar.hidden = true;
   visiting = null;
@@ -892,3 +941,189 @@ btnBackHome.addEventListener("click", () => {
 
 renderFriends();
 scheduleVisitor();
+
+/* ================= ONLINE ACCOUNT (Firebase) ================= */
+window.addEventListener("firebase-error", () => {
+  const m = document.getElementById("auth-msg");
+  if (m) m.textContent = "online account is unavailable right now — offline play still works 🐱";
+});
+
+const authLoggedOut = document.getElementById("auth-logged-out");
+const authLoggedIn = document.getElementById("auth-logged-in");
+const authEmail = document.getElementById("auth-email");
+const authPass = document.getElementById("auth-pass");
+const authUsername = document.getElementById("auth-username");
+const authUserLabel = document.getElementById("auth-user-label");
+const btnSignup = document.getElementById("btn-signup");
+const btnLogin = document.getElementById("btn-login");
+const btnLogout = document.getElementById("btn-logout");
+const authMsg = document.getElementById("auth-msg");
+
+function cleanErr(err) {
+  const m = String((err && err.message) || err);
+  if (m.includes("email-already-in-use")) return "that email already has an account — try logging in";
+  if (m.includes("invalid-email")) return "that email looks wrong";
+  if (m.includes("weak-password")) return "password too weak — need 6+ characters";
+  if (m.includes("user-not-found") || m.includes("wrong-password") || m.includes("invalid-credential"))
+    return "email or password is wrong";
+  if (m.includes("that username is taken")) return "that username is taken — try another";
+  if (m.includes("no user with that username")) return "no user with that username";
+  if (m.includes("permission-denied")) return "the online database isn't set up yet — check the Firebase rules";
+  if (m.includes("unavailable") || m.includes("failed to fetch") || m.includes("network"))
+    return "can't reach the online service — try again later";
+  return m;
+}
+
+function setAuthMsg(m) { authMsg.textContent = m || ""; }
+function setAuthBusy(on) { [btnSignup, btnLogin, btnLogout].forEach((b) => { b.disabled = on; }); }
+
+btnSignup.addEventListener("click", async () => {
+  const email = authEmail.value.trim();
+  const pass = authPass.value;
+  const uname = authUsername.value.trim().slice(0, 16);
+  if (!email || !pass) return setAuthMsg("enter an email and password");
+  if (pass.length < 6) return setAuthMsg("password needs 6+ characters");
+  if (!uname) return setAuthMsg("pick an online username");
+  setAuthBusy(true);
+  setAuthMsg("creating your account…");
+  try {
+    await FB.signUp(email, pass, uname, avatar, {
+      catName,
+      outfit,
+      catColor: readPref("mikanCat") || "orange",
+      bgColor: readPref("mikanBg") || "mint",
+    });
+    authEmail.value = "";
+    authPass.value = "";
+    authUsername.value = "";
+    setAuthMsg("");
+  } catch (err) {
+    setAuthMsg(cleanErr(err));
+  } finally {
+    setAuthBusy(false);
+  }
+});
+
+btnLogin.addEventListener("click", async () => {
+  const email = authEmail.value.trim();
+  const pass = authPass.value;
+  if (!email || !pass) return setAuthMsg("enter an email and password");
+  setAuthBusy(true);
+  setAuthMsg("logging in…");
+  try {
+    await FB.signIn(email, pass);
+    authEmail.value = "";
+    authPass.value = "";
+    setAuthMsg("");
+  } catch (err) {
+    setAuthMsg(cleanErr(err));
+  } finally {
+    setAuthBusy(false);
+  }
+});
+
+btnLogout.addEventListener("click", async () => {
+  setAuthBusy(true);
+  setAuthMsg("");
+  try {
+    await FB.signOut();
+  } catch (err) {
+    setAuthMsg(cleanErr(err));
+  } finally {
+    setAuthBusy(false);
+  }
+});
+
+async function refreshFriendProfiles() {
+  if (!(window.FB && FB.state.uid)) return;
+  for (const f of friends) {
+    try {
+      const p = await FB.findUser(f);
+      if (p) friendProfiles[f] = p;
+    } catch (e) {}
+  }
+  renderFriends();
+}
+
+window.addEventListener("mikan-auth", async (e) => {
+  const profile = e.detail;
+  if (!profile) {
+    authLoggedOut.hidden = false;
+    authLoggedIn.hidden = true;
+    setAuthMsg("");
+    username = readPref("mikanUser") || "";
+    avatar = readPref("mikanAvatar") || "🐱";
+    catName = readPref("mikanName") || "Mikan";
+    nameEl.textContent = catName;
+    outfit = readPref("mikanOutfit") || "bow";
+    cat.dataset.outfit = outfit;
+    applyBg(readPref("mikanBg") || "mint");
+    applyCat(readPref("mikanCat") || "orange");
+    userNameInput.value = username;
+    friendCodeEl.textContent = username ? "friend code: " + username.toUpperCase() : "";
+    try { friends = JSON.parse(readPref("mikanFriends") || "[]"); } catch (err) { friends = []; }
+    if (!Array.isArray(friends)) friends = [];
+    Object.keys(friendProfiles).forEach((k) => delete friendProfiles[k]);
+    renderFriends();
+    return;
+  }
+
+  authLoggedOut.hidden = true;
+  authLoggedIn.hidden = false;
+  authUserLabel.textContent = "@" + profile.username;
+  setAuthMsg("");
+
+  username = profile.username;
+  userNameInput.value = username;
+  friendCodeEl.textContent = "friend code: " + username.toUpperCase();
+
+  const push = {};
+  if (profile.catName) { catName = profile.catName; nameEl.textContent = catName; savePref("mikanName", catName); }
+  else push.catName = catName;
+  if (profile.avatar) { avatar = profile.avatar; savePref("mikanAvatar", avatar); }
+  else push.avatar = avatar;
+  if (profile.outfit) { outfit = profile.outfit; cat.dataset.outfit = outfit; savePref("mikanOutfit", outfit); }
+  else push.outfit = outfit;
+  if (profile.catColor) applyCat(profile.catColor);
+  else push.catColor = readPref("mikanCat") || "orange";
+  if (profile.bgColor) applyBg(profile.bgColor);
+  else push.bgColor = readPref("mikanBg") || "mint";
+
+  document.querySelectorAll("#bg-swatches .swatch").forEach((s) =>
+    s.classList.toggle("active", s.title === (readPref("mikanBg") || "mint")));
+  document.querySelectorAll("#cat-swatches .swatch").forEach((s) =>
+    s.classList.toggle("active", s.title === (readPref("mikanCat") || "orange")));
+  document.querySelectorAll("#outfits-card .mini").forEach((b) =>
+    b.classList.toggle("active", b.dataset.outfit === outfit));
+  document.querySelectorAll(".avatar-btn").forEach((x) =>
+    x.classList.toggle("active", x.textContent === avatar));
+
+  const s = profile.stats || {};
+  stats.hunger = clamp(Math.max(stats.hunger, s.h ?? 0));
+  stats.thirst = clamp(Math.max(stats.thirst, s.th ?? 0));
+  stats.energy = clamp(Math.max(stats.energy, s.e ?? 0));
+  stats.happiness = clamp(Math.max(stats.happiness, s.ha ?? 0));
+  render();
+
+  if (Array.isArray(profile.friends)) {
+    friends = profile.friends.slice();
+    savePref("mikanFriends", JSON.stringify(friends));
+  } else {
+    push.friends = friends;
+  }
+
+  if (Object.keys(push).length) {
+    try { await FB.pushProfile(push); } catch (err) {}
+  }
+
+  await refreshFriendProfiles();
+  try { await FB.pushStats({ h: stats.hunger, th: stats.thirst, e: stats.energy, ha: stats.happiness }); } catch (err) {}
+  try { await FB.pushPresence(true); } catch (err) {}
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (window.FB && FB.state.uid) FB.pushPresence(!document.hidden).catch(() => {});
+});
+window.addEventListener("pagehide", () => {
+  if (window.FB && FB.state.uid) FB.pushPresence(false).catch(() => {});
+});

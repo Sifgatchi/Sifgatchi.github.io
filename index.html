@@ -336,6 +336,28 @@
 
     <section class="extra-card" id="profile-card">
       <h3>Profile &amp; Friends</h3>
+      <div id="auth-logged-out">
+        <div class="profile-row">
+          <input id="auth-email" type="email" placeholder="email" autocomplete="email">
+        </div>
+        <div class="profile-row">
+          <input id="auth-pass" type="password" placeholder="password (6+ characters)">
+        </div>
+        <div class="profile-row">
+          <input id="auth-username" maxlength="16" placeholder="online username (new accounts)">
+        </div>
+        <div class="profile-row">
+          <button id="btn-signup" class="action history">Create account</button>
+          <button id="btn-login" class="action history">Log in</button>
+        </div>
+      </div>
+      <div id="auth-logged-in" hidden>
+        <div class="profile-row">
+          <span class="auth-user" id="auth-user-label"></span>
+          <button id="btn-logout" class="action history">Log out</button>
+        </div>
+      </div>
+      <p class="footnote" id="auth-msg"></p>
       <div class="profile-row">
         <input id="user-name" maxlength="16" placeholder="your username">
         <button id="btn-save-user" class="action history">Save</button>
@@ -354,12 +376,13 @@
         <span id="visit-text"></span>
         <button id="btn-back-home" class="action history">&#11013;&#65039; Home</button>
       </div>
-      <p class="footnote">online visiting needs a server &middot; friends are saved on this device for now</p>
+      <p class="footnote">create an account to visit friends' cats online &middot; no account = offline mode</p>
     </section>
 
     <p class="footer">no dying allowed &#128147; tap the cat to pet her, poke her nose/tummy/ears/tail, and click visitors &#127803;</p>
   </main>
 
+<script type="module" src="firebase.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

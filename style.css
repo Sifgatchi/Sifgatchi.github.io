@@ -496,7 +496,7 @@ main {
 .profile-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .profile-row:first-of-type { margin-top: 0; }
 
-#user-name, #add-friend {
+#user-name, #add-friend, #auth-email, #auth-pass, #auth-username {
   flex: 1;
   min-width: 0;
   border: 2px solid #e8e2d6;
@@ -508,7 +508,9 @@ main {
   background: #fff;
   outline: none;
 }
-#user-name:focus, #add-friend:focus { border-color: var(--orange); }
+#user-name:focus, #add-friend:focus, #auth-email:focus, #auth-pass:focus, #auth-username:focus { border-color: var(--orange); }
+
+.auth-user { font-weight: 700; color: #6d8f6e; font-size: 0.95rem; flex: 1; }
 
 .avatar-btn {
   width: 42px;
