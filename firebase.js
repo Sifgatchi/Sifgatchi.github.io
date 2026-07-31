@@ -85,6 +85,11 @@
       await fb.authMod.signInWithEmailAndPassword(auth, email, password);
     },
 
+    async signInWithGoogle() {
+      const provider = new fb.authMod.GoogleAuthProvider();
+      await fb.authMod.signInWithPopup(auth, provider);
+    },
+
     async signOut() {
       await fb.authMod.signOut(auth);
     },

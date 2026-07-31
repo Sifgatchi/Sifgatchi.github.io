@@ -801,11 +801,20 @@ if (!Array.isArray(friends)) friends = [];
 userNameInput.value = username;
 friendCodeEl.textContent = username ? "friend code: " + username.toUpperCase() : "";
 
-btnSaveUser.addEventListener("click", () => {
+btnSaveUser.addEventListener("click", async () => {
   const n = userNameInput.value.trim().slice(0, 16);
   if (window.FB && FB.state.uid) {
-    userNameInput.value = username;
-    say(`your online name is @${username} 🐱`);
+    if (!n) return say("type a username first 🐱");
+    try {
+      await FB.setUsername(n);
+      username = n;
+      userNameInput.value = username;
+      friendCodeEl.textContent = "friend code: " + username.toUpperCase();
+      say(`you're now @${username}! 🐱`);
+      sounds.pop();
+    } catch (err) {
+      say(cleanErr(err), 3000);
+    }
     return;
   }
   if (n) {
@@ -957,6 +966,7 @@ const authUserLabel = document.getElementById("auth-user-label");
 const btnSignup = document.getElementById("btn-signup");
 const btnLogin = document.getElementById("btn-login");
 const btnLogout = document.getElementById("btn-logout");
+const btnGoogle = document.getElementById("btn-google");
 const authMsg = document.getElementById("auth-msg");
 
 function cleanErr(err) {
@@ -966,6 +976,11 @@ function cleanErr(err) {
   if (m.includes("weak-password")) return "password too weak — need 6+ characters";
   if (m.includes("user-not-found") || m.includes("wrong-password") || m.includes("invalid-credential"))
     return "email or password is wrong";
+  if (m.includes("account-exists-with-different-credential"))
+    return "that email already has a password account — log in with email & password";
+  if (m.includes("popup-closed-by-user")) return "sign-in cancelled";
+  if (m.includes("popup-blocked")) return "popup was blocked — allow popups for this site and try again";
+  if (m.includes("operation-not-allowed")) return "that sign-in method isn't enabled yet — check the Firebase console";
   if (m.includes("that username is taken")) return "that username is taken — try another";
   if (m.includes("no user with that username")) return "no user with that username";
   if (m.includes("permission-denied")) return "the online database isn't set up yet — check the Firebase rules";
@@ -975,7 +990,7 @@ function cleanErr(err) {
 }
 
 function setAuthMsg(m) { authMsg.textContent = m || ""; }
-function setAuthBusy(on) { [btnSignup, btnLogin, btnLogout].forEach((b) => { b.disabled = on; }); }
+function setAuthBusy(on) { [btnSignup, btnLogin, btnLogout, btnGoogle].forEach((b) => { b.disabled = on; }); }
 
 btnSignup.addEventListener("click", async () => {
   const email = authEmail.value.trim();
@@ -1027,6 +1042,19 @@ btnLogout.addEventListener("click", async () => {
   setAuthMsg("");
   try {
     await FB.signOut();
+  } catch (err) {
+    setAuthMsg(cleanErr(err));
+  } finally {
+    setAuthBusy(false);
+  }
+});
+
+btnGoogle.addEventListener("click", async () => {
+  setAuthBusy(true);
+  setAuthMsg("signing in with Google…");
+  try {
+    await FB.signInWithGoogle();
+    setAuthMsg("");
   } catch (err) {
     setAuthMsg(cleanErr(err));
   } finally {
