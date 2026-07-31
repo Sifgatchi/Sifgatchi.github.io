@@ -1,0 +1,16 @@
+{
+  "name": "Mikan · Pastel Tamagotchi",
+  "short_name": "Mikan",
+  "description": "A pastel orange cat who never ever dies.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#CDECCF",
+  "theme_color": "#A5D6A7",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

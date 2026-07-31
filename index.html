@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mikan · Pastel Tamagotchi</title>
+<meta name="theme-color" content="#A5D6A7">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mikan">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <button id="btn-sound" class="sound-btn" aria-label="toggle sound">&#128266;</button>
+    <h1>&#127818; <span id="catname">Mikan</span> <button id="btn-rename" class="rename-btn" title="rename me" aria-label="rename">&#9999;&#65039;</button></h1>
+    <p class="tagline">a pastel orange cat who never ever dies &#128049;</p>
+  </header>
+
+  <main>
+    <section class="stage-card">
+      <div class="stage" id="stage">
+        <div class="speech" id="speech"></div>
+        <div class="cat" id="cat" data-state="idle">
+
+          <svg class="catsvg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+
+            <!-- tail -->
+            <g id="tail">
+              <path d="M 84 196 Q 38 208 34 164 Q 31 130 62 126"
+                    fill="none" stroke="#FFB74D" stroke-width="16" stroke-linecap="round"/>
+              <path d="M 40 150 L 46 146 M 37 165 L 45 162 M 42 136 L 48 133"
+                    stroke="#F9A825" stroke-width="4" stroke-linecap="round"/>
+            </g>
+
+            <!-- body -->
+            <ellipse cx="120" cy="188" rx="58" ry="46" fill="#FFB74D"/>
+            <ellipse cx="120" cy="196" rx="34" ry="26" fill="#FFE0B2"/>
+
+            <!-- paws -->
+            <ellipse cx="92" cy="212" rx="16" ry="10" fill="#FFB74D"/>
+            <ellipse cx="148" cy="212" rx="16" ry="10" fill="#FFB74D"/>
+
+            <!-- ears -->
+            <polygon points="66,76 100,26 122,60" fill="#FFB74D"/>
+            <polygon points="174,76 140,26 118,60" fill="#FFB74D"/>
+            <polygon points="80,66 98,38 110,58" fill="#FFCDD2"/>
+            <polygon points="160,66 142,38 130,58" fill="#FFCDD2"/>
+
+            <!-- bow -->
+            <g id="bow">
+              <polygon points="120,34 104,26 104,42" fill="#F8BBD0"/>
+              <polygon points="120,34 136,26 136,42" fill="#F8BBD0"/>
+              <circle cx="120" cy="34" r="4.5" fill="#F06292"/>
+            </g>
+
+            <!-- head -->
+            <ellipse cx="120" cy="102" rx="58" ry="52" fill="#FFB74D"/>
+
+            <!-- forehead stripes -->
+            <path d="M 102 60 Q 108 74 104 82" stroke="#F9A825" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <path d="M 120 56 Q 120 72 120 80" stroke="#F9A825" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <path d="M 138 60 Q 132 74 136 82" stroke="#F9A825" stroke-width="5" stroke-linecap="round" fill="none"/>
+
+            <!-- blush -->
+            <ellipse cx="86" cy="118" rx="10" ry="6" fill="#F8BBD0" opacity="0.9"/>
+            <ellipse cx="154" cy="118" rx="10" ry="6" fill="#F8BBD0" opacity="0.9"/>
+
+            <!-- whiskers -->
+            <g stroke="#D84315" stroke-width="2.5" stroke-linecap="round">
+              <line x1="74" y1="112" x2="42" y2="106"/>
+              <line x1="74" y1="120" x2="44" y2="124"/>
+              <line x1="166" y1="112" x2="198" y2="106"/>
+              <line x1="166" y1="120" x2="196" y2="124"/>
+            </g>
+
+            <!-- nose -->
+            <path d="M 113 110 L 127 110 L 120 118 Z" fill="#F06292"/>
+
+            <!-- ============ FACES ============ -->
+            <!-- idle eyes -->
+            <g id="eyes-idle">
+              <ellipse cx="96" cy="98" rx="8.5" ry="9.5" fill="#4E342E"/>
+              <ellipse cx="144" cy="98" rx="8.5" ry="9.5" fill="#4E342E"/>
+              <circle cx="93" cy="94" r="3" fill="#fff"/>
+              <circle cx="141" cy="94" r="3" fill="#fff"/>
+              <circle cx="99" cy="100" r="1.6" fill="#fff"/>
+              <circle cx="147" cy="100" r="1.6" fill="#fff"/>
+            </g>
+
+            <!-- happy closed eyes -->
+            <g id="eyes-happy">
+              <path d="M 87 97 Q 96 88 105 97" stroke="#4E342E" stroke-width="4" stroke-linecap="round" fill="none"/>
+              <path d="M 135 97 Q 144 88 153 97" stroke="#4E342E" stroke-width="4" stroke-linecap="round" fill="none"/>
+            </g>
+
+            <!-- fully closed eyes (blink) -->
+            <g id="eyes-closed">
+              <path d="M 88 98 Q 96 105 104 98" stroke="#4E342E" stroke-width="4" stroke-linecap="round" fill="none"/>
+              <path d="M 136 98 Q 144 105 152 98" stroke="#4E342E" stroke-width="4" stroke-linecap="round" fill="none"/>
+            </g>
+
+            <!-- excited eyes -->
+            <g id="eyes-excited">
+              <ellipse cx="96" cy="97" rx="10" ry="11" fill="#4E342E"/>
+              <ellipse cx="144" cy="97" rx="10" ry="11" fill="#4E342E"/>
+              <circle cx="92" cy="92" r="3.6" fill="#fff"/>
+              <circle cx="140" cy="92" r="3.6" fill="#fff"/>
+              <circle cx="99" cy="99" r="2" fill="#fff"/>
+              <circle cx="147" cy="99" r="2" fill="#fff"/>
+            </g>
+
+            <!-- sad droopy eyes -->
+            <g id="eyes-sad">
+              <path d="M 89 100 Q 96 107 103 100" stroke="#4E342E" stroke-width="4" stroke-linecap="round" fill="none"/>
+              <path d="M 137 100 Q 144 107 151 100" stroke="#4E342E" stroke-width="4" stroke-linecap="round" fill="none"/>
+            </g>
+
+            <!-- idle mouth -->
+            <g id="mouth-idle">
+              <path d="M 111 123 Q 116 130 120 125 Q 124 130 129 123"
+                    stroke="#4E342E" stroke-width="3" stroke-linecap="round" fill="none"/>
+            </g>
+
+            <!-- open mouth (eating) -->
+            <g id="mouth-eat">
+              <ellipse cx="120" cy="126" rx="7" ry="8" fill="#4E342E"/>
+              <ellipse cx="120" cy="128" rx="4.5" ry="5" fill="#F48FB1"/>
+            </g>
+
+            <!-- sleeping mouth -->
+            <g id="mouth-sleep">
+              <ellipse cx="120" cy="126" rx="4" ry="5" fill="#4E342E"/>
+            </g>
+
+            <!-- sad frown -->
+            <g id="mouth-sad">
+              <path d="M 111 131 Q 116 125 120 129 Q 124 125 129 131"
+                    stroke="#4E342E" stroke-width="3" stroke-linecap="round" fill="none"/>
+            </g>
+
+            <!-- content small smile (drinking) -->
+            <g id="mouth-content">
+              <path d="M 114 127 Q 120 133 126 127"
+                    stroke="#4E342E" stroke-width="3" stroke-linecap="round" fill="none"/>
+            </g>
+
+            <!-- ============ PROPS ============ -->
+            <g id="bubble-zzz">
+              <text x="158" y="52" class="z z1">z</text>
+              <text x="172" y="38" class="z z2">z</text>
+              <text x="188" y="26" class="z z3">z</text>
+            </g>
+
+            <g id="food-bowl">
+              <ellipse cx="120" cy="206" rx="36" ry="9" fill="#FFE0B2"/>
+              <path d="M 84 206 L 92 234 Q 120 243 148 234 L 156 206 Z" fill="#FFCC80"/>
+              <circle cx="106" cy="202" r="5" fill="#FFB74D"/>
+              <circle cx="122" cy="199" r="5" fill="#F9A825"/>
+              <circle cx="137" cy="202" r="5" fill="#FFB74D"/>
+              <circle cx="115" cy="196" r="4" fill="#F9A825"/>
+              <path d="M 128 192 L 132 198 L 126 198 Z" fill="#A1887F"/>
+            </g>
+
+            <g id="water-bowl">
+              <path d="M 96 208 L 102 232 Q 120 239 138 232 L 144 208 Z" fill="#B3E5FC"/>
+              <ellipse cx="120" cy="206" rx="24" ry="7" fill="#81D4FA"/>
+              <ellipse cx="111" cy="204" rx="5" ry="2.5" fill="#B3E5FC"/>
+              <path d="M 132 200 L 134 196 M 138 202 L 141 198" stroke="#81D4FA" stroke-width="2" stroke-linecap="round"/>
+            </g>
+
+            <g id="ball">
+              <circle cx="176" cy="192" r="15" fill="#F8BBD0"/>
+              <path d="M 168 192 A 8 8 0 0 0 184 192" stroke="#F06292" stroke-width="3" fill="none"/>
+              <path d="M 176 186 A 5 5 0 0 0 176 198" stroke="#F06292" stroke-width="3" fill="none"/>
+              <path d="M 192 182 L 195 189 L 202 189 L 197 194 L 199 202 L 192 197 L 185 202 L 187 194 L 182 189 L 189 189 Z" fill="#FFE082"/>
+            </g>
+
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats-card">
+      <div class="stat" data-stat="hunger">
+        <span class="stat-label">&#127869; Hunger</span>
+        <div class="bar"><div class="fill hunger"></div></div>
+        <span class="stat-num">100</span>
+      </div>
+      <div class="stat" data-stat="thirst">
+        <span class="stat-label">&#128167; Thirst</span>
+        <div class="bar"><div class="fill thirst"></div></div>
+        <span class="stat-num">100</span>
+      </div>
+      <div class="stat" data-stat="energy">
+        <span class="stat-label">&#9889; Energy</span>
+        <div class="bar"><div class="fill energy"></div></div>
+        <span class="stat-num">100</span>
+      </div>
+      <div class="stat" data-stat="happiness">
+        <span class="stat-label">&#128154; Happiness</span>
+        <div class="bar"><div class="fill happiness"></div></div>
+        <span class="stat-num">100</span>
+      </div>
+    </section>
+
+    <section class="actions-card">
+      <button id="btn-eat" class="action eat">&#127836; Eat</button>
+      <button id="btn-drink" class="action drink">&#128167; Drink</button>
+      <button id="btn-sleep" class="action sleep">&#128164; Sleep</button>
+      <button id="btn-play" class="action play">&#127934; Play</button>
+    </section>
+
+    <p class="footer">no dying allowed &#128147; stats dip and rise, but Mikan lives forever</p>
+  </main>
+
+<script src="script.js"></script>
+</body>
+</html>
