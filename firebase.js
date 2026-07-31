@@ -116,16 +116,17 @@
     async setUsername(newName) {
       const old = state.username;
       const uname = String(newName || "").toLowerCase().trim();
-      if (!old || old === uname) return;
+      if (!uname) return;
       const ud = await fb.dbMod.getDoc(fb.dbMod.doc(db, "usernames", uname));
       if (ud.exists() && ud.data().uid !== state.uid) throw new Error("that username is taken");
-      if (ud.exists()) {
-        await fb.dbMod.deleteDoc(fb.dbMod.doc(db, "usernames", uname));
+      if (!ud.exists()) {
+        await fb.dbMod.setDoc(fb.dbMod.doc(db, "usernames", uname), { uid: state.uid });
       }
-      await fb.dbMod.setDoc(fb.dbMod.doc(db, "usernames", uname), { uid: state.uid });
-      const od = await fb.dbMod.getDoc(fb.dbMod.doc(db, "usernames", old));
-      if (od.exists() && od.data().uid === state.uid) {
-        await fb.dbMod.deleteDoc(fb.dbMod.doc(db, "usernames", old));
+      if (old && old !== uname) {
+        const od = await fb.dbMod.getDoc(fb.dbMod.doc(db, "usernames", old));
+        if (od.exists() && od.data().uid === state.uid) {
+          await fb.dbMod.deleteDoc(fb.dbMod.doc(db, "usernames", old));
+        }
       }
       await fb.dbMod.setDoc(fb.dbMod.doc(db, "users", state.uid), { username: uname }, { merge: true });
       state.username = uname;
